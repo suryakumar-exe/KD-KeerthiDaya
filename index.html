@@ -1,0 +1,403 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Will You Be My Valentine?</title>
+  <style>
+    /* --- Reset & base --- */
+    :root{
+      --bg1:#ffe6f0; /* soft pink */
+      --bg2:#fff0f6; /* lighter */
+      --accent:#ff4d88; /* rose */
+      --accent-dark:#c7005b;
+      --glass: rgba(255,255,255,0.12);
+      --glass-2: rgba(255,255,255,0.06);
+      --card-shadow: 0 10px 30px rgba(199,0,91,0.15);
+      font-family: 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', Arial;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0}
+    body{
+      background: radial-gradient(1200px 600px at 10% 10%, #fff4fb 0%, transparent 10%),
+                  radial-gradient(900px 400px at 90% 90%, #fff0ff 0%, transparent 10%),
+                  linear-gradient(180deg,var(--bg1),var(--bg2));
+      color:#2b0236;
+      overflow:hidden;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+      display:flex;align-items:center;justify-content:center;
+    }
+
+    /* floating hearts background */
+    .hearts {
+      position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden;
+    }
+    .heart{
+      position:absolute;width:18px;height:18px;background:var(--accent);transform:rotate(45deg);
+      border-radius:3px;opacity:0.9;filter:drop-shadow(0 6px 12px rgba(199,0,91,0.12));
+      animation: floatUp linear infinite;
+    }
+    .heart:before,.heart:after{content:'';position:absolute;background:inherit;border-radius:50%}
+    .heart:before{width:18px;height:18px;top:-9px;left:0}
+    .heart:after{width:18px;height:18px;left:-9px;top:0}
+    @keyframes floatUp{to{transform:translateY(-120vh) rotate(45deg);opacity:0}}
+
+    /* container for pages */
+    .stage{position:relative;z-index:1;width:100%;height:100%;display:flex;align-items:center;justify-content:center}
+
+    /* glass card */
+    .card{
+      width:min(680px,92%);max-width:780px;padding:36px;border-radius:18px;background:linear-gradient(135deg,rgba(255,255,255,0.16),rgba(255,255,255,0.06));
+      box-shadow:var(--card-shadow);backdrop-filter: blur(10px) saturate(120%);
+      border:1px solid rgba(255,255,255,0.18);text-align:center;position:relative;overflow:hidden
+    }
+    h1{font-size:clamp(22px,4vw,36px);margin:6px 0 8px;color:var(--accent-dark);letter-spacing:0.6px}
+    p.lead{margin:0 0 18px;color:#3b0038;opacity:0.9;font-size:1rem}
+
+    /* buttons */
+    .buttons{display:flex;gap:14px;justify-content:center;margin-top:18px}
+    .btn{padding:12px 20px;border-radius:999px;border:none;cursor:pointer;font-weight:600;font-size:1rem;box-shadow:0 6px 18px rgba(0,0,0,0.08);transition:transform .18s ease,box-shadow .18s}
+    .btn:active{transform:translateY(2px)}
+    .btn-yes{background:linear-gradient(90deg,var(--accent),#ff88b3);color:white}
+  /* make No look the same as Yes initially */
+  .btn-no{background:linear-gradient(90deg,var(--accent),#ff88b3);color:white;border:none}
+
+    /* cute note */
+    .note{font-size:0.9rem;margin-top:16px;color:#72003f}
+
+    /* No-button impossible area */
+    .no-impossible{position:relative}
+
+    /* spin & bounce for No button when moving */
+    @keyframes spinBounce{0%{transform:rotate(0) translateY(0)}50%{transform:rotate(15deg) translateY(-6px)}100%{transform:rotate(0) translateY(0)}}
+
+    /* Page transitions */
+    .page{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:28px;transition:opacity .8s cubic-bezier(.2,.9,.2,1),transform .8s ease;}
+    .page.hidden{opacity:0;pointer-events:none;transform:scale(.98) translateY(12px)}
+
+    /* celebration styles */
+    .celebrate{flex-direction:column;gap:6px}
+    .celebrate h2{font-size:clamp(20px,4vw,32px);color:var(--accent-dark);margin:6px 0}
+    .muted{color:#4b0a2e}
+
+    /* animated canvas overlay items */
+    .fx-layer{position:absolute;inset:0;pointer-events:none;z-index:2}
+
+    /* gallery */
+    .gallery{display:flex;flex-direction:column;align-items:center;gap:14px;padding:10px}
+    .slide{width:100%;max-width:720px;height:420px;border-radius:14px;overflow:hidden;position:relative;background:linear-gradient(180deg,#ffdff0,#fff);display:flex;align-items:center;justify-content:center}
+    .slide img{width:100%;height:100%;object-fit:cover;display:block;opacity:0;transform:scale(1.08);transition:opacity .9s ease,transform 1.2s ease}
+    .slide img.active{opacity:1;transform:scale(1)}
+    .caption{font-size:1rem;color:#3d0830}
+
+    .navs{display:flex;gap:10px;align-items:center}
+    .nav-btn{background:rgba(255,255,255,0.9);border:none;padding:10px;border-radius:10px;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,0.08)}
+    .progress{width:160px;height:8px;background:rgba(0,0,0,0.06);border-radius:99px;overflow:hidden}
+    .progress > i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),#ffb3d1);width:0%;transition:width 0.3s linear}
+
+    /* responsive */
+    @media (max-width:600px){
+      .slide{height:260px}
+      .card{padding:20px;border-radius:14px}
+      .buttons{flex-direction:column}
+    }
+  </style>
+</head>
+<body>
+  <div class="hearts" id="hearts"></div>
+
+  <main class="stage">
+    <!-- Page 1: Question -->
+    <section class="page" id="page1">
+      <div class="card" role="dialog" aria-labelledby="q-title">
+        <h1 id="q-title">Will You Be My Valentine? ❤️</h1>
+        <p class="lead">I made this little surprise just for you. Choose wisely 💕</p>
+
+        <div class="buttons">
+          <button class="btn btn-yes" id="yesBtn">Yes ❤️</button>
+          <div class="no-impossible">
+            <button class="btn btn-no" id="noBtn" aria-label="No button">No 😜</button>
+          </div>
+        </div>
+
+        <p class="note">Don't waste your time trying to catch the No button 😘</p>
+      </div>
+    </section>
+
+    <!-- Page 2: Celebration -->
+    <section class="page hidden" id="page2">
+      <div class="card celebrate">
+        <h2>Yaaah! You said YES! ❤️</h2>
+        <p class="muted">You just made my day the happiest ever!</p>
+        <p class="muted">I want to show you some special moments of us ❤️</p>
+        <button class="btn btn-yes" id="memoriesBtn">See Our Memories ✨</button>
+      </div>
+      <div class="fx-layer" id="fxLayer"></div>
+    </section>
+
+    <!-- Page 3: Gallery -->
+    <section class="page hidden" id="page3">
+      <div class="card gallery">
+        <div class="slide" aria-live="polite">
+          <!-- images inserted by JS -->
+        </div>
+        <div class="caption" id="caption"></div>
+        <div class="navs">
+          <button class="nav-btn" id="prevBtn">◀ Prev</button>
+          <div class="progress" aria-hidden="true"><i id="progBar"></i></div>
+          <button class="nav-btn" id="nextBtn">Next ▶</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    /*********************** TODO: Editable photos array ***********************/
+    const photos = [
+      { image: 'images/photo1.jpg', caption: 'The day we met ❤️' },
+      { image: 'images/photo2.jpg', caption: 'Our favorite memory 💕' },
+      { image: 'images/photo3.jpg', caption: 'Laughing together 😘' },
+    ];
+
+    // Utility: random int
+    const rInt = (min,max)=> Math.floor(Math.random()*(max-min+1))+min;
+
+    // --- Floating hearts background generation ---
+    (function makeHearts(){
+      const container = document.getElementById('hearts');
+      const count = 18;
+      for(let i=0;i<count;i++){
+        const el = document.createElement('div');
+        el.className='heart';
+        const size = rInt(12,34);
+        el.style.width = size+'px'; el.style.height = size+'px';
+        el.style.left = (Math.random()*100)+'%';
+        el.style.bottom = (-Math.random()*20)+'%';
+        el.style.opacity = (0.5+Math.random()*0.6).toFixed(2);
+        el.style.background = `linear-gradient(180deg, ${['#ff6fa3','#ff4d88','#ff9ec9'][rInt(0,2)]}, #ffb3d1)`;
+        el.style.animationDuration = (12+Math.random()*10)+'s';
+        el.style.animationDelay = (Math.random()*6)+'s';
+        container.appendChild(el);
+      }
+    })();
+
+    // Page refs
+    const page1 = document.getElementById('page1');
+    const page2 = document.getElementById('page2');
+    const page3 = document.getElementById('page3');
+
+    // Buttons
+    const yesBtn = document.getElementById('yesBtn');
+    const noBtn = document.getElementById('noBtn');
+    const memoriesBtn = document.getElementById('memoriesBtn');
+
+    // NO button impossible behavior
+    (function impossibleNo(){
+      const wrapper = noBtn.parentElement; // original wrapper
+      const move = ()=>{
+        // get card bounds to keep button inside
+        const card = wrapper.closest('.card');
+        // ensure card is a positioned container
+        if (getComputedStyle(card).position === 'static') card.style.position = 'relative';
+        const cardRect = card.getBoundingClientRect();
+        const btnRect = noBtn.getBoundingClientRect();
+        const padding = 18;
+        const maxX = Math.max(0, Math.floor(cardRect.width - btnRect.width - padding));
+        const maxY = Math.max(0, Math.floor(cardRect.height - btnRect.height - padding));
+        const left = rInt(0,maxX);
+        const top = rInt(0,maxY);
+        // append button to card so absolute positioning is relative to card
+        if (noBtn.parentElement !== card) card.appendChild(noBtn);
+        noBtn.style.position='absolute';
+        noBtn.style.left = left+'px';
+        noBtn.style.top = top+'px';
+        noBtn.style.zIndex = 6;
+        // playful animation
+        noBtn.style.animation = 'spinBounce .6s ease';
+        setTimeout(()=> noBtn.style.animation='',700);
+      };
+
+      // move only when user hovers/touches (pointerenter covers mouse and pen)
+      ['pointerenter','touchstart'].forEach(evt=>{
+        noBtn.addEventListener(evt, ()=>{ move(); });
+      });
+    })();
+
+    // Transition utility
+    function showPage(from, to){
+      from.classList.add('hidden');
+      setTimeout(()=>{
+        to.classList.remove('hidden');
+      },220);
+    }
+
+    // Celebration FX: confetti, hearts burst, balloons, sparkles
+    function celebrate(){
+      const fx = document.getElementById('fxLayer');
+      fx.innerHTML='';
+
+      // heart explosion
+      for(let i=0;i<24;i++){
+        const h = document.createElement('div');
+        h.className='heart';
+        const s = rInt(10,28);
+        h.style.width = s+'px'; h.style.height = s+'px';
+        h.style.left = '50%'; h.style.top = '48%';
+        h.style.transform='rotate(45deg)';
+        h.style.background = `linear-gradient(180deg, ${i%2? '#ff6fa3':'#ffccdf'}, #ffb3d1)`;
+        h.style.opacity = 1;
+        h.style.transition = `transform 1200ms cubic-bezier(.2,.9,.2,1),opacity 1200ms ease`;
+        fx.appendChild(h);
+        // burst movement
+        const ang = Math.random()*Math.PI*2;
+        const dist = 80 + Math.random()*220;
+        requestAnimationFrame(()=>{
+          h.style.transform = `translate(${Math.cos(ang)*dist}px, ${Math.sin(ang)*dist}px) rotate(${rInt(-360,360)}deg)`;
+          h.style.opacity = 0;
+        });
+      }
+
+      // confetti
+      for(let i=0;i<60;i++){
+        const c = document.createElement('div');
+        c.style.position='absolute'; c.style.width='10px'; c.style.height='6px'; c.style.borderRadius='2px';
+        c.style.left = (50 + (Math.random()-0.5)*60)+'%'; c.style.top = (40 + (Math.random()-0.5)*10)+'%';
+        c.style.background = ['#ffd700','#ff6fa3','#ff4d88','#b38be3'][rInt(0,3)];
+        c.style.opacity=1; c.style.transform = `rotate(${rInt(0,360)}deg)`;
+        c.style.transition='transform 2000ms cubic-bezier(.2,.9,.2,1), top 2000ms ease, opacity 2000ms ease';
+        fx.appendChild(c);
+        setTimeout(()=>{
+          c.style.top = (100 + Math.random()*20) + '%';
+          c.style.transform = `translateX(${rInt(-200,200)}px) rotate(${rInt(360,720)}deg)`;
+          c.style.opacity = 0;
+        }, 50 + Math.random()*1200);
+      }
+
+      // balloons
+      for(let i=0;i<6;i++){
+        const b = document.createElement('div');
+        b.style.position='absolute'; b.style.width='34px'; b.style.height='44px'; b.style.borderRadius='20px 20px 20px 20px';
+        b.style.left = (20 + i*10)+'%'; b.style.top = '110%';
+        b.style.background = ['#ff6fa3','#ffd1e8','#b38be3','#ff9ec9'][i%4];
+        b.style.boxShadow='0 8px 20px rgba(0,0,0,0.12)'; b.style.transition='top 2500ms ease-out';
+        fx.appendChild(b);
+        setTimeout(()=> b.style.top = (10 + Math.random()*30)+'%', 200 + i*180);
+      }
+
+      // sparkles
+      for(let i=0;i<20;i++){
+        const s = document.createElement('div');
+        s.style.width='6px'; s.style.height='6px'; s.style.position='absolute'; s.style.borderRadius='50%';
+        s.style.left = (40 + Math.random()*20)+'%'; s.style.top = (30 + Math.random()*30)+'%';
+        s.style.background='rgba(255,255,255,0.9)'; s.style.boxShadow='0 0 12px 4px rgba(255,240,255,0.6)';
+        s.style.opacity=0; s.style.transition='opacity 900ms ease, transform 900ms ease';
+        fx.appendChild(s);
+        setTimeout(()=>{ s.style.opacity=1; s.style.transform='scale(1.8)'; }, 150 + Math.random()*600);
+        setTimeout(()=>{ s.style.opacity=0; }, 1200 + Math.random()*600);
+      }
+
+      // clear after a while
+      setTimeout(()=>{ fx.innerHTML=''; }, 3200);
+    }
+
+    yesBtn.addEventListener('click', ()=>{
+      showPage(page1, page2);
+      setTimeout(()=> celebrate(), 280);
+    });
+
+    memoriesBtn.addEventListener('click', ()=>{
+      showPage(page2, page3);
+      startGallery();
+    });
+
+    // --- Gallery implementation ---
+    const slideEl = document.querySelector('.slide');
+    const captionEl = document.getElementById('caption');
+    const progBar = document.getElementById('progBar');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+
+    let current = 0, timer = null;
+
+    function renderSlide(index){
+      slideEl.innerHTML = '';
+      const entry = photos[index];
+      const img = document.createElement('img');
+      img.src = entry.image; img.alt = entry.caption || '';
+      // show active after tiny delay to allow transition
+      setTimeout(()=> img.classList.add('active'), 40);
+      slideEl.appendChild(img);
+      captionEl.textContent = entry.caption || '';
+      // progress
+      const pct = Math.round(((index+1)/photos.length)*100);
+      progBar.style.width = pct + '%';
+    }
+
+    function nextSlide(nudge=1){
+      current = (current + nudge + photos.length) % photos.length;
+      renderSlide(current);
+    }
+
+    function prevSlide(){ nextSlide(-1); }
+
+    prevBtn.addEventListener('click', ()=>{ prevSlide(); resetTimer(); });
+    nextBtn.addEventListener('click', ()=>{ nextSlide(); resetTimer(); });
+
+    function startGallery(){
+      renderSlide(current);
+      timer = setInterval(()=>{ nextSlide(); }, 3000);
+    }
+    function resetTimer(){ if(timer){ clearInterval(timer); timer = setInterval(()=> nextSlide(), 3000); }}
+
+    // Keyboard for accessibility
+    document.addEventListener('keydown', (e)=>{
+      if(page3.classList.contains('hidden')) return;
+      if(e.key === 'ArrowRight') { nextSlide(); resetTimer(); }
+      if(e.key === 'ArrowLeft') { prevSlide(); resetTimer(); }
+    });
+
+    // Small preloader for images to avoid flash
+    function preloadPhotos(){
+      photos.forEach(p=>{
+        const i = new Image(); i.src = p.image;
+      });
+    }
+    preloadPhotos();
+
+    // Accessibility: if user tries to tab to No, move it
+    noBtn.addEventListener('focus', (e)=>{ e.preventDefault(); noBtn.blur(); });
+
+    // ensure stage resizes keep noBtn inside
+    window.addEventListener('resize', ()=>{
+      // clamp into card
+      const card = noBtn.closest('.card');
+      const rect = card.getBoundingClientRect();
+      const btn = noBtn.getBoundingClientRect();
+      const left = parseFloat(noBtn.style.left || 0);
+      const top = parseFloat(noBtn.style.top || 0);
+      const maxX = Math.max(0, rect.width - btn.width - 18);
+      const maxY = Math.max(0, rect.height - btn.height - 18);
+      if(left > maxX) noBtn.style.left = maxX + 'px';
+      if(top > maxY) noBtn.style.top = maxY + 'px';
+    });
+
+    // Small user guidance if local images missing: fallback placeholders
+    window.addEventListener('load', ()=>{
+      // if images not found, show placeholders (no network calls - use data URI)
+      photos.forEach((p,i)=>{
+        const img = new Image(); img.src = p.image;
+        img.onerror = ()=>{
+          // replace with soft placeholder
+          photos[i].image = 'data:image/svg+xml;utf8,' + encodeURIComponent(`
+            <svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'>
+              <rect width='100%' height='100%' fill='%23ffe6f0'/>
+              <text x='50%' y='45%' dominant-baseline='middle' text-anchor='middle' fill='%23c7005b' font-family='Arial' font-size='48'>Photo ${i+1}</text>
+              <text x='50%' y='55%' dominant-baseline='middle' text-anchor='middle' fill='%2380003a' font-family='Arial' font-size='26'>Replace images in the photos array</text>
+            </svg>`);
+        };
+      });
+    });
+  </script>
+</body>
+</html>
